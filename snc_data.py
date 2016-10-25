@@ -1,5 +1,4 @@
 import csv
-from random import randint, random
 
 currency_codes = ['USD', 'CNY', 'RUB']
 currencies = ['EURO', 'USD', 'CNY', 'RUB']
