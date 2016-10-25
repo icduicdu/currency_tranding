@@ -1,20 +1,19 @@
 from exchange_sequence import ExchangeSequence
-from snc_data import get_rate, separator
+from snc_data import get_rate, separator, currencies
 
-currencies = ['EURO', 'USD', 'CNY', 'RUB']
-
-# all risk free exchange sequences
-sequences = set()
-shortest_seq = None
-max_profit_seq = None
+shortest_seq = None    # shortest risk free exchange sequence
+max_profit_seq = None  # risk free exchange sequence with max profit
+best = []              # best[j][i]-maximum counts of currency i on step j
 
 
-# exchange rate for convert i-currency-item to j-currency-item
 def rate(c_from, c_to):
+    """exchange rate for convert i-currency-item to j-currency-item"""
     return get_rate(currencies[c_from], currencies[c_to])
 
 
 def add_conversion_step(currency_from, currency_to, exchange_seq_object):
+    """ Convert ExchangeSequence from currency with index "currency_from" to currency with index "currency_to"
+    and saves change history """
     new_amount = exchange_seq_object.amount * rate(currency_from, currency_to)
     new_sequence = exchange_seq_object.sequence + separator + currencies[currency_to]
     new_op_amount = exchange_seq_object.operations_amount + 1
@@ -22,7 +21,9 @@ def add_conversion_step(currency_from, currency_to, exchange_seq_object):
     return exc_seq
 
 
-def append_exchange_seq_if_no_risk(exchange_seq_object, currency_index):
+def save_exchange_seq_if_no_risk(exchange_seq_object, currency_index):
+    """ Check object of class ExchangeSequence. If exchange_seq_object better than object we have at current step
+    then saves it """
     if (exchange_seq_object.amount * rate(currency_index, 0)) > 1.00:
         global shortest_seq
         global max_profit_seq
@@ -30,7 +31,6 @@ def append_exchange_seq_if_no_risk(exchange_seq_object, currency_index):
         new_seq = exchange_seq_object.sequence + separator + currencies[0]
         op_amount = exchange_seq_object.operations_amount + 1
         new_seq = ExchangeSequence(new_amount, new_seq, op_amount)
-        # sequences.add(ExchangeSequence(new_amount, new_seq, op_amount))
 
         if shortest_seq is None:
             shortest_seq = new_seq
@@ -45,43 +45,47 @@ def append_exchange_seq_if_no_risk(exchange_seq_object, currency_index):
             max_profit_seq = new_seq
 
 
-# best[1][i]-maximum counts of currency i on step 1
-best = []
-for i in range(len(currencies)):
-    best.append([])
-    for j in range(len(currencies)):
-        best[i].append(ExchangeSequence(0, currencies[0], 1))
-
-
-# first step: convert one euro to all currencies
-for i in range(len(currencies)):
-    if i == 0:
-        best[0][i] = ExchangeSequence(rate(0, i), currencies[0], 1)
-    else:
-        best[0][i] = ExchangeSequence(rate(0, i), currencies[0] + separator + currencies[i], 2)
-
-
-for k in range(1, len(currencies)):
+def init_matrix():
+    """ best[1][i]-maximum counts of currency i on step 1 """
+    global best
     for i in range(len(currencies)):
+        best.append([])
         for j in range(len(currencies)):
-            previous_best = best[k-1][j]
-            current_best = best[k][i]
-            if currencies[i] not in str(previous_best.sequence):
-                if previous_best.amount * rate(j, i) > current_best.amount:
-                    best[k][i] = add_conversion_step(j, i, previous_best)
-                    append_exchange_seq_if_no_risk(best[k][i], i)
+            best[i].append(ExchangeSequence(0, currencies[0], 1))
 
 
-seq_list = list(sequences)
-if shortest_seq is not None:
-    # shortest = seq_list[0]
-    # with_more_money = seq_list[0]
-    # for s in seq_list:
-    #     if s.amount > with_more_money.amount:
-    #         with_more_money = s
-    #     if len(s.sequence.split(separator)) < len(shortest.sequence.split(separator)):
-    #         shortest = s
-    print 'shortest:' + str(shortest_seq)
-    print 'max profit:' + str(max_profit_seq)
-else:
-    print 'no risk-free opportunities exist yielding over 1.00% profit exist'
+def first_step():
+    """ first step: convert one euro to all currencies"""
+    global best
+    for i in range(len(currencies)):
+        if i == 0:
+            best[0][i] = ExchangeSequence(rate(0, i), currencies[0], 1)
+        else:
+            best[0][i] = ExchangeSequence(rate(0, i), currencies[0] + separator + currencies[i], 2)
+
+
+def run_next_steps():
+    for k in range(1, len(currencies)):
+        for i in range(len(currencies)):
+            for j in range(len(currencies)):
+                previous_best = best[k - 1][j]
+                current_best = best[k][i]
+                if currencies[i] not in str(previous_best.sequence):
+                    if previous_best.amount * rate(j, i) > current_best.amount:
+                        best[k][i] = add_conversion_step(j, i, previous_best)
+                        save_exchange_seq_if_no_risk(best[k][i], i)
+
+
+def print_result():
+    global shortest_seq
+    global max_profit_seq
+    if shortest_seq is not None:
+        print 'shortest:' + str(shortest_seq)
+        print 'max profit:' + str(max_profit_seq)
+    else:
+        print 'no risk-free opportunities exist yielding over 1.00% profit exist'
+
+init_matrix()
+first_step()
+run_next_steps()
+print_result()

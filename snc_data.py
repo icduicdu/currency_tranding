@@ -2,6 +2,8 @@ from itertools import permutations
 
 currency_codes = ['USD', 'CNY', 'RUB']
 
+currencies = ['EURO', 'USD', 'CNY', 'RUB']
+
 our_currency = 'EURO'
 our_money_amount = 1.0
 
