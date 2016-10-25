@@ -11,7 +11,7 @@ currency_rate = None
 def read_rates():
     global currency_rate
     currency_rate = {}
-    f = open('data.csv', 'rb')
+    f = open('data/data.csv', 'rb')
     reader = csv.reader(f)
     idx = 0
     for row in reader:
